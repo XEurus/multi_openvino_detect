@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卫星图</title>
+    <style>
+        html, body, #container {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        #video-stream {
+            width: 720px;
+            height: 480px;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            margin: 5px;
+        }
+
+        #coordinates {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.5); /* Light background with slight transparency */
+            padding: 15px; /* Increase padding for a cleaner look */
+            border: 2px solid #3498db; /* Blue border */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Add a subtle shadow */
+            font-family: 'Arial', sans-serif; /* Choose a readable font */
+        }
+
+        button {
+            background-color: rgba(52, 152, 219, 0.6); /* Blue background with 80% opacity */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            width: 60px; /* Adjust the width to make it square */
+            height: 60px; /* Adjust the height to make it square */
+            overflow: hidden; /* Hide overflowing content */
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add a subtle box shadow */
+            transition: background-color 0.3s ease;
+        }
+
+        .button img {
+
+            width: 60%; /* Make the image fill the button */
+            height: 60%; /* Make the image fill the button */
+            object-fit: contain; /* Cover the entire button */
+
+        }
+
+        button:hover {
+            background-color: rgba(41, 128, 185, 0.8); /* Darker blue color on hover with 80% opacity */
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2); /* Add a slightly larger box shadow on hover */
+
+        }
+        .custom-content-marker .close-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 18px;
+            height: 18px;
+            font-size: 15px;
+            background: rgba(224, 222, 222, 0.76);
+            border-radius: 70%;
+            color: #0c50fc;
+            text-align: center;
+            line-height: 15px;
+            box-shadow: -1px 1px 1px rgba(10, 10, 10, .2);
+        }
+        .custom-content-marker .close-btn:hover{
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body>
+<script type="text/javascript">
+    window._AMapSecurityConfig = {
+        securityJsCode: '78b17a766e3b40dbfbb7761790f0ee3c',
+    }
+
+    var waypoints = [];
+    var markers = [];
+    var markerCount = 0;
+    var connectingLines = []; // Add this line to keep track of polyline overlays
+
+    function addWaypoint(lng, lat) {
+        waypoints.push([lng, lat]);
+        showMarker([lng, lat]);
+    }
+
+    function showMarker(position) {
+        markerCount++;
+
+        var markerContent = '' +
+        '<div class="custom-content-marker">' +
+        '   <img src="https://webapi.amap.com/theme/v1.3/markers/n/mark_bs.png" style="width: 30px; height: 50px;">' +
+        '   <div class="close-btn" onclick="clearMarker()">'+markerCount+'</div>' +
+        '</div>';
+        var marker = new AMap.Marker({
+            position: position,
+            content: markerContent,
+
+            map: map,
+
+        });
+
+        map.add(marker);
+
+        markers.push(marker);
+        drawConnectingLine();
+
+    }
+    function initializeIcons(centerCoordinates) {
+    // Initialize the dynamic icon marker
+    dynamicIconMarker = new AMap.Marker({
+        position: [centerCoordinates[0], centerCoordinates[1]], // Adjust the position as needed
+        icon: new AMap.Icon({
+            size: new AMap.Size(40, 40),
+            imageSize: new AMap.Size(40, 40),
+            image: 'https://img.icons8.com/?size=80&id=rJSINIXLwINM&format=png', // Provide the URL for your dynamic icon
+        }),
+        map: map,
+    });
+
+    map.add( dynamicIconMarker);
+}
+// // Function to update the position of the dynamic icon
+// function updateDynamicIconPosition() {
+//         if (dynamicIconMarker && waypoints.length > 0) {
+//             // Calculate the distance and direction to the next waypoint
+//             var distance = AMap.GeometryUtil.distance(dynamicIconMarker.getPosition(), waypoints[0]);
+//             var direction = AMap.GeometryUtil.direction(dynamicIconMarker.getPosition(), waypoints[0]);
+//
+//             // Calculate the new position based on a constant speed (adjust as needed)
+//             var speed = 50; // meters per second
+//             var deltaLng = (speed * Math.sin(direction)).toFixed(6);
+//             var deltaLat = (speed * Math.cos(direction)).toFixed(6);
+//
+//             var newPosition = [
+//                 dynamicIconMarker.getPosition().getLng() + parseFloat(deltaLng),
+//                 dynamicIconMarker.getPosition().getLat() + parseFloat(deltaLat)
+//             ];
+//
+//             // Update the position of the dynamic icon
+//             dynamicIconMarker.setPosition(newPosition);
+//
+//             // If the dynamic icon reaches the first waypoint, remove the waypoint from the list
+//             if (distance < speed) {
+//                 waypoints.shift();
+//             }
+//
+//             // Call the update function recursively (adjust the delay as needed)
+//             setTimeout(updateDynamicIconPosition, 1000);
+//         }
+//     }
+    function drawConnectingLine() {
+        if (markers.length > 1) {
+            var line = new AMap.Polyline({
+                path: [markers[markers.length - 2].getPosition(), markers[markers.length - 1].getPosition()],
+                strokeColor: '#3498db',  // Adjust the color as needed
+                strokeOpacity: 0.7,      // Adjust the opacity as needed
+                strokeWeight: 3,         // Adjust the line weight as needed
+                borderWeight: 2, // 线条宽度，默认为 1
+            });
+            map.add(line);
+            connectingLines.push(line);
+
+        }
+    }
+
+    function removeLastWaypoint() {
+        waypoints.pop();
+        var marker = markers.pop();
+        map.remove(marker);
+        markerCount--;
+        removeLastConnectingLine();
+        updateWaypointsInfo();
+    }
+
+    function removeAllWaypoints() {
+        for (var i = 0; i < markers.length; i++) {
+            map.remove(markers);
+        }
+        waypoints = [];
+        markers = [];
+        markerCount = 0;
+        removeAllConnectingLines();
+        updateWaypointsInfo();
+    }
+
+    function removeLastConnectingLine() {
+        if (markers.length > 0) {
+            var lastLine = connectingLines.pop();
+            map.remove(lastLine); // Remove the last connecting line
+        }
+    }
+
+    function removeAllConnectingLines() {
+        var overlays = map.getAllOverlays();
+        for (var i = overlays.length - 1; i >= 0; i--) {
+            if (overlays[i] instanceof AMap.Polyline) {
+                map.remove(overlays[i]);
+            }
+        }
+    }
+
+    function updateWaypointsInfo() {
+        var infoDiv = document.getElementById('waypoints-info');
+        infoDiv.innerText = "航点信息：";
+        for (var i = 0; i < waypoints.length; i++) {
+            infoDiv.innerText += "\n" + "航点 " + (i + 1) + ": 经度 " + waypoints[i][0] + ", 纬度 " + waypoints[i][1];
+        }
+    }
+
+    function showWaypointsInfo() {
+        var info = "航点信息：\n";
+        for (var i = 0; i < waypoints.length; i++) {
+            info += "航点 " + (i + 1) + ": 经度 " + waypoints[i][0] + ", 纬度 " + waypoints[i][1] + "\n";
+        }
+        alert(info);
+        // updateDynamicIconPosition()
+    }
+</script>
+
+<div id="container"></div>
+<div id="coordinates" style="position: absolute; top: 10px; left: 10px; padding: 10px; border: 1px solid black;"></div>
+<button onclick="removeAllWaypoints()" style="position: absolute; top: 20px; right: 20px;"><img
+        src="https://img.icons8.com/?size=50&id=37308&format=png"/></button>
+<button onclick="removeLastWaypoint()" style="position: absolute; top: 120px; right: 20px;"><img
+        src="https://img.icons8.com/?size=50&id=7709&format=png"/></button>
+<button onclick="showWaypointsInfo()" style="position: absolute; top: 220px; right: 20px;"><img
+        src="https://img.icons8.com/?size=50&id=9061&format=png"/></button>
+
+<script src="https://webapi.amap.com/maps?v=1.4.15&key=5cac1754889f96eddb682132cb37ccc7"></script>
+<script type="text/javascript">
+    var centerCoordinates = [116.397428, 43.94923];
+    document.getElementById('coordinates').innerText = "经度：" + centerCoordinates[0] + ", 纬度：" + centerCoordinates[1];
+
+    var map = new AMap.Map('container', {
+        center: centerCoordinates,
+        layers: [new AMap.TileLayer.Satellite()],
+        zoom: 15
+    });
+    initializeIcons(centerCoordinates);
+
+    map.on('click', function (e) {
+        console.log("经度：" + e.lnglat.getLng() + ", 纬度：" + e.lnglat.getLat());
+        document.getElementById('coordinates').innerText = "经度：" + e.lnglat.getLng() + ", 纬度：" + e.lnglat.getLat();
+        addWaypoint(e.lnglat.getLng(), e.lnglat.getLat());
+    });
+</script>
+
+<img id="video-stream" src="{{ url_for('video_feed') }}" alt="Live Video Stream">
+</body>
+</html>

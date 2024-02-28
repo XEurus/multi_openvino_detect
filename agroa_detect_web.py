@@ -2,12 +2,8 @@ import ctypes
 import os
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
 import sys
-import MainWindow
 import agorartc
-from PyQt5 import QtOpenGL
-from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QMessageBox
 import numpy as np
 import cv2
 from PIL import Image
@@ -466,7 +462,7 @@ class MyWindow():
         self.eventHandler = MyRtcEngineEventHandler(self.rtc)
         self.rtc.initEventHandler(self.eventHandler)
         self.videoFrameObserver = MyVideoFrameObserver()
-        self.token="007eJxTYGiZEROUeGlCzOFA3VnT5BrSN7n0t97yWnJ9y/bkDZZuy10VGFJSDYwsjExTkgwszE0MQbRhiqWhiaEZkGNsYpGUsfBGakMgI8NS7stMjAwQCOIzMxgaGTMwAAApjB4y"
+        self.token="007eJxTYLh/tm1Vu3S6/9WVtYdPbW1Su21js3eO9tM9Xe9kdAyVpj1VYEhJNTCyMDJNSTKwMDcxBNGGKZaGJoZmQI6xiUXSzq/3UhsCGRle+KxiZWSAQBCfmcHQyJiBAQC3tiBp"
 
 
     def joinChannel(self):
